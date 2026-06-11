@@ -1,0 +1,20 @@
+{
+  "name": "presentation-tool",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Markdown-driven presentation deck with per-slide terminal panes.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "NODE_ENV=development PRESENTATION_DEBUG=1 node --watch server.js",
+    "debug": "NODE_ENV=development PRESENTATION_DEBUG=1 node --trace-uncaught server.js",
+    "check": "node --check server.js && node --check client.js"
+  },
+  "dependencies": {
+    "mermaid": "^11.14.0",
+    "node-pty": "^1.1.0",
+    "ws": "^8.20.0",
+    "xterm": "^5.3.0",
+    "xterm-addon-fit": "^0.8.0"
+  }
+}

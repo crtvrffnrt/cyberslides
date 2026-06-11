@@ -1,0 +1,144 @@
+{
+  "title": "Example Presentation",
+  "theme": {
+    "background": "#101114",
+    "foreground": "#f2f2f2",
+    "muted": "#8a8a8a",
+    "accent": "#7dff9b"
+  },
+  "defaults": {
+    "textScale": 1,
+    "terminal": {
+      "shell": "auto",
+      "fontSize": 14,
+      "theme": {
+        "background": "#101114",
+        "foreground": "#f2f2f2",
+        "cursor": "#7dff9b",
+        "selectionBackground": "rgba(125, 255, 155, 0.24)"
+      }
+    },
+    "headingScale": 1,
+    "bodyScale": 1
+  },
+  "cover": {
+    "kicker": "Sample deck",
+    "subtitle": "A neutral starter presentation for local live demos",
+    "title": "Example Presentation",
+    "agendaTitle": "Agenda",
+    "agenda": [
+      "Welcome",
+      "Terminal with text",
+      "Text slide",
+      "Image placeholder",
+      "Focused terminal",
+      "Dense slide"
+    ]
+  },
+  "metadata": {
+    "date": "2026-01-01",
+    "version": "Example"
+  },
+  "presenter": {
+    "name": "Max Mustermann",
+    "role": "Example Presenter",
+    "contact": "max.mustermann@example.com",
+    "website": "https://example.com",
+    "github": "https://github.com/example-user",
+    "linkedin": "https://www.linkedin.com/in/example-user/"
+  },
+  "slides": [
+    {
+      "type": "cover",
+      "layout": "cover",
+      "terminal": {
+        "enabled": false
+      },
+      "mustReadUrl": "",
+      "headingScale": 1.15,
+      "bodyScale": 1.1,
+      "textScale": 1.1
+    },
+    {
+      "type": "terminalText",
+      "layout": "hero",
+      "terminal": {
+        "enabled": true,
+        "leftVw": 52,
+        "topVh": 12,
+        "widthVw": 42,
+        "heightVh": 72,
+        "title": "Live Terminal",
+        "position": "right"
+      },
+      "mustReadUrl": "",
+      "headingScale": 1,
+      "bodyScale": 1,
+      "textScale": 1
+    },
+    {
+      "type": "text",
+      "layout": "center",
+      "terminal": {
+        "enabled": false
+      },
+      "mustReadUrl": "",
+      "headingScale": 1,
+      "bodyScale": 1,
+      "textScale": 1
+    },
+    {
+      "type": "image",
+      "layout": "center",
+      "terminal": {
+        "enabled": false
+      },
+      "mustReadUrl": "",
+      "image": {
+        "src": "",
+        "alt": "Placeholder image",
+        "x": 0,
+        "y": 0,
+        "scale": 1
+      },
+      "headingScale": 1,
+      "bodyScale": 1,
+      "textScale": 1
+    },
+    {
+      "type": "terminalFocused",
+      "layout": "terminal",
+      "terminal": {
+        "enabled": true,
+        "leftVw": 7,
+        "topVh": 9,
+        "widthVw": 86,
+        "heightVh": 78,
+        "title": "Focused Terminal"
+      },
+      "mustReadUrl": "",
+      "headingScale": 1,
+      "bodyScale": 1,
+      "textScale": 1
+    },
+    {
+      "type": "dense",
+      "layout": "dense",
+      "terminal": {
+        "enabled": false
+      },
+      "mustReadUrl": "",
+      "headingScale": 1,
+      "bodyScale": 1,
+      "textScale": 1
+    }
+  ],
+  "contentSlides": [
+    "> Sample deck\n\n# Example Presentation\n\nA neutral starter presentation for local live demos",
+    "# Terminal with text\n\nUse this slide for a short setup and a live command.\n\n- Keep the text brief\n- Let the terminal carry the demo",
+    "# Text slide\n\nOne clear idea per slide.\n\nUse short sentences that remain readable during screen sharing.",
+    "# Image placeholder\n\nAdd a single visual here when your deck needs one.\n\nThis public sample intentionally ships without embedded images.",
+    "# Focused terminal\n\n",
+    "# Dense slide\n\n| Area | Placeholder |\n| --- | --- |\n| Goal | Show compact technical detail |\n| Input | Example data |\n| Output | Example result |\n\n- Use dense slides sparingly\n- Prefer concise evidence over long prose"
+  ]
+}
