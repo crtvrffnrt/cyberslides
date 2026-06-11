@@ -1,7 +1,7 @@
 <div align="center">
   <h1>Cyberslides</h1>
 
-  <p><strong>Local slide decks with real terminals, fast edit/save, and a minimal browser UI.</strong></p>
+  <p><strong>Local slide decks with real terminals embedded, fast edit/save, and a minimal browser UI.</strong></p>
 
   <p>
     <a href="#presenting"><strong>Presenting</strong></a> •
