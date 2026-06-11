@@ -1,6 +1,5 @@
 <div align="center">
-  <h1>Cyberslides</h1>
-
+  <img src="./logo.png" alt="Cyberslides logo" width="360">
   <p><strong>Local slide decks with real terminals embedded, fast edit/save, and a minimal browser UI.</strong></p>
 
   <p>
