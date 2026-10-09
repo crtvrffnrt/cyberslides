@@ -216,3 +216,84 @@ Useful failure signals:
 - `HTTP 500`: server could not read or write `presentation.config.json`.
 
 </details>
+
+
+---
+
+## Attack Path Simulation (initial release)
+
+Cyberslides retains its existing classic presentation at / and adds an optional local
+training launcher at /attackpath. Existing presentations remain stored in
+presentation.config.json. The new mode creates a distinct on-disk project with a cover,
+a scope slide, and ten editable steps for reconnaissance, Shodan intelligence, DNS and
+asset validation, Nmap, HTTP fingerprinting, web discovery, Nuclei, attack-path hypotheses,
+and an assessment debrief. **The steps are not an autonomous testing agent.** Scan
+evidence appears in a collapsible operator panel rather than being automatically
+inserted into authored slide text.
+
+The launch page supports named projects, persisted scope, explicitly listed
+domains/IPs/CIDRs/URLs, exclusions, limits, and authorization confirmation.
+Projects are kept under local attackpath-data/ (excluded from git). Opening a
+project uses /?project=ID and the **existing** slide renderer and Edit Mode.
+
+### Scanner adapters
+
+- Shodan: authorized IP, SHODANAPI environment variable; passive lookup.
+- Nmap: authorized IP, locally installed nmap; conservative service scan.
+- Nuclei: authorized HTTP(S) URL, locally installed nuclei; limited HTTP
+  templates, conservative tags, and disabled redirects.
+- C3PO: authorized IP or HTTP(S) URL, local C3PO checkout identified by
+  C3PO_PATH; JSON research mode with its Nuclei phase disabled.
+
+Optional configuration:
+
+    export C3PO_PATH=/path/to/C3PO-Shodan-codex
+    export SHODANAPI=your_key_from_secret_store
+    npm start
+
+Every active scan requires authorization confirmation, a non-passive profile,
+and an explicit in-scope target. Navigating slides does not start scans.
+Running jobs survive browser navigation, can be cancelled, and are marked
+interrupted after a server restart. Raw results are bounded and retained
+locally. There is no automatic exploitation.
+
+**Scope limitations:** the application checks immediate targets but does not
+yet enforce network egress control over internal DNS resolution or all possible
+scanner target expansion. For regulated public engagements, apply separate
+egress restrictions and review downstream tool behavior. C3PO research mode
+performs its own targeted network probes. HTTPx/FFUF automated workflow
+orchestration, normalized findings, and automatically generated attack-path
+diagrams are future improvements rather than delivered features.
+
+### LAN binding
+
+By default the listener binds to 127.0.0.1. For an authenticated LAN listener:
+
+    export CYBERSLIDES_ACCESS_TOKEN="$(openssl rand -hex 32)"
+    HOST=0.0.0.0 PORT=8080 npm start
+
+Open the application at http://YOUR_LAN_IP:8080/attackpath.
+The bind address 0.0.0.0 is not a browser URL.
+
+The operator token gives access to privileged editing, scanning and real
+terminal sessions. For a read-only viewer role, optionally configure a
+different strong CYBERSLIDES_VIEWER_TOKEN. Do not publish the plain HTTP
+listener to the internet. Place privileged remote access behind an
+authenticated HTTPS/WSS reverse proxy. Login sessions are in memory and
+expire after 12 hours.
+
+### Background.png
+
+If background.png exists at root or under project subdirectories, it is
+discovered automatically and rendered beneath a dark readability overlay.
+Symlinks and generated/hidden directories are excluded. If it is missing,
+the existing background style is retained. Interactive per-slide background
+editing is not part of this initial release.
+
+### Tests
+
+    npm run check
+    npm test
+
+GitHub Actions runs Node tests and an HTTP smoke test. Live public scanning is
+intentionally excluded from automated tests.
