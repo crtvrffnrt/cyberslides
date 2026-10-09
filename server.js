@@ -3,9 +3,14 @@ const http = require("http");
 const path = require("path");
 const WebSocket = require("ws");
 const pty = require("node-pty");
+const { createAccessControl } = require("./access-control");
+const { createAttackPathService } = require("./attackpath");
 
 const fsp = fs.promises;
 const rootDir = __dirname;
+const attackPath = createAttackPathService(rootDir);
+const hostAddress = process.env.HOST || "127.0.0.1";
+const accessControl = createAccessControl({ host: hostAddress });
 const parentDir = path.resolve(rootDir, "..");
 const contentDir = path.join(rootDir, "content");
 const localNodeModulesDir = path.join(rootDir, "node_modules");
@@ -1641,10 +1646,10 @@ function sendJson(res, statusCode, value) {
   res.end(body);
 }
 
-async function handlePresentationApi(req, res) {
+async function handlePresentationApi(req, res, projectId = null) {
   try {
     if (req.method === "GET") {
-      const config = readJson(configPath);
+      const config = projectId ? attackPath.getPresentation(projectId) : readJson(configPath);
       const normalized = normalizePresentation(config);
       sendJson(res, 200, normalized);
       return;
@@ -1664,11 +1669,12 @@ async function handlePresentationApi(req, res) {
     const payload = await readRequestJson(req);
     const validated = validatePresentationPayload(payload);
     const normalized = normalizePresentation(validated.config);
-    const previousConfig = readJson(configPath);
+    const previousConfig = projectId ? attackPath.getPresentation(projectId) : readJson(configPath);
     const materialized = await materializeImageAssets(normalized.config);
     const nextConfig = materialized.config;
-    await queuePresentationWrite(nextConfig);
-    await deleteUnusedContentAssets(previousConfig, nextConfig);
+    if (projectId) attackPath.savePresentation(projectId, nextConfig);
+    else await queuePresentationWrite(nextConfig);
+    if (!projectId) await deleteUnusedContentAssets(previousConfig, nextConfig);
     const nextNormalized = normalizePresentation(nextConfig);
     debugLog("saved presentation", `${nextNormalized.contentSlides.length} slides`);
     sendJson(res, 200, nextNormalized);
@@ -1740,9 +1746,9 @@ async function handleAudioApi(res) {
   sendJson(res, 200, { tracks });
 }
 
-function buildDeckHtml() {
+function buildDeckHtml(projectId = null) {
   const template = readText(templatePath);
-  const config = readJson(configPath);
+  const config = projectId ? attackPath.getPresentation(projectId) : readJson(configPath);
   const normalized = normalizePresentation(config);
   const renderedSlides = renderSlides(normalized.contentSlides, normalized.config);
   const theme = config.theme || {};
@@ -1771,7 +1777,12 @@ function buildDeckHtml() {
       }
     }));
 
-  return html;
+  const background = attackPath.discoverBackground();
+  const backgroundCss = background ?
+    '<style>.deck { background-image: linear-gradient(rgba(5,8,12,.70),rgba(5,8,12,.70)),url(' +
+    JSON.stringify(background) + '); background-position:center;background-size:cover }</style>' : '';
+  return html.replace("</head>", backgroundCss + '</head>')
+    .replace("</body>", '<script src="/attackpath-overlay.js" defer></script></body>');
 }
 
 const server = http.createServer((req, res) => {
@@ -1784,10 +1795,26 @@ const server = http.createServer((req, res) => {
 
   const requestUrl = new URL(req.url || "/", `http://${req.headers.host || "127.0.0.1"}`);
   const { pathname } = requestUrl;
+  if (!accessControl.authorizeHttp(req, res, pathname)) return;
+  if (pathname === "/api/login" && req.method === "POST") {
+    readRequestJson(req).then((body) => accessControl.login(req, res, body))
+      .catch(() => sendJson(res, 400, { error: "Invalid login request." }));
+    return;
+  }
+  if (pathname.startsWith("/api/attackpath/")) {
+    attackPath.handle(req, res, pathname, readRequestJson, sendJson).catch(() => {
+      if (!res.writableEnded) sendJson(res, 500, { error: "Request failed." });
+    });
+    return;
+  }
+  if (pathname === "/attackpath") {
+    serveFile(res, path.join(rootDir, "attackpath.html"));
+    return;
+  }
 
   if (pathname === "/" || pathname === "/index.html") {
     try {
-      const html = buildDeckHtml();
+      const html = buildDeckHtml(requestUrl.searchParams.get("project"));
       res.writeHead(200, { "content-type": "text/html; charset=utf-8", "cache-control": "no-cache" });
       res.end(html);
     } catch (error) {
@@ -1799,7 +1826,7 @@ const server = http.createServer((req, res) => {
   }
 
   if (pathname === "/api/presentation") {
-    handlePresentationApi(req, res).catch((error) => {
+    handlePresentationApi(req, res, requestUrl.searchParams.get("project")).catch((error) => {
       debugLog("api failed", error);
       if (!res.writableEnded) {
         sendJson(res, 500, { error: "Presentation API failed.", detail: debugEnabled ? error.message : undefined });
@@ -1823,6 +1850,11 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  if (pathname.startsWith("/attackpath-data/") || pathname.startsWith("/.git/") ||
+      pathname.split("/").some((segment) => segment.startsWith(".") && segment.length > 1) ||
+      ["/server.js", "/attackpath.js", "/access-control.js", "/presentation.config.json"].includes(pathname)) {
+    res.writeHead(404); res.end("Not found"); return;
+  }
   const assetPath = assetPathForUrl(pathname);
   if (!assetPath) {
     res.writeHead(400, { "content-type": "text/plain; charset=utf-8" });
@@ -1932,7 +1964,7 @@ server.on("upgrade", (req, socket, head) => {
   }
 
   const requestUrl = new URL(req.url || "/", `http://${req.headers.host || "127.0.0.1"}`);
-  if (requestUrl.pathname !== "/terminal") {
+  if (requestUrl.pathname !== "/terminal" || !accessControl.authorizeUpgrade(req)) {
     socket.destroy();
     return;
   }
@@ -2102,8 +2134,8 @@ process.once("exit", () => {
 });
 
 function listen(port) {
-  server.listen(port, "127.0.0.1", () => {
-    console.log(`Presentation tool running at http://127.0.0.1:${port}/`);
+  server.listen(port, hostAddress, () => {
+    console.log(`Cyberslides listening at http://${hostAddress}:${port}/`);
   });
 }
 
