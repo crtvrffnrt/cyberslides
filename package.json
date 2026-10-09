@@ -8,7 +8,8 @@
     "start": "node server.js",
     "dev": "NODE_ENV=development PRESENTATION_DEBUG=1 node --watch server.js",
     "debug": "NODE_ENV=development PRESENTATION_DEBUG=1 node --trace-uncaught server.js",
-    "check": "node --check server.js && node --check client.js"
+    "check": "node --check server.js && node --check client.js && node --check attackpath.js && node --check access-control.js && node --check attackpath-ui.js && node --check attackpath-overlay.js",
+    "test": "node --test test/*.test.js"
   },
   "dependencies": {
     "mermaid": "^11.14.0",
