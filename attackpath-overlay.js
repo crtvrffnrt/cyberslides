@@ -58,7 +58,7 @@
   let previousSlide = -1;
   const label = element("label", "Scanner");
   const tool = element("select");
-  for (const [value, title] of [["shodan", "Shodan host intelligence"], ["nmap", "Nmap service scan"],
+  for (const [value, title] of [["demo", "Offline demo (no network)"], ["shodan", "Shodan host intelligence"], ["nmap", "Nmap service scan"],
     ["nuclei", "Nuclei web checks"], ["c3po", "C3PO research JSON"]]) {
     const opt = element("option", title); opt.value = value; tool.append(opt);
   }
