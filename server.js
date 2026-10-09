@@ -2115,6 +2115,7 @@ function shutdown(signal) {
   }
 
   shuttingDown = true;
+  attackPath.shutdown();
   debugLog("shutdown requested", signal);
   clearInterval(heartbeatInterval);
 
@@ -2148,6 +2149,7 @@ function shutdown(signal) {
 process.once("SIGINT", () => shutdown("SIGINT"));
 process.once("SIGTERM", () => shutdown("SIGTERM"));
 process.once("exit", () => {
+  attackPath.shutdown();
   clearInterval(heartbeatInterval);
   for (const session of Array.from(activeTerminalSessions)) {
     teardownTerminalSession(session, { killPty: true });
