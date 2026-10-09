@@ -238,6 +238,7 @@ project uses /?project=ID and the **existing** slide renderer and Edit Mode.
 
 ### Scanner adapters
 
+- Offline demo: synthetic, explicitly labeled sample evidence with no network traffic or authorization requirement.
 - Shodan: authorized IP, SHODANAPI environment variable; passive lookup.
 - Nmap: authorized IP, locally installed nmap; conservative service scan.
 - Nuclei: authorized HTTP(S) URL, locally installed nuclei; limited HTTP
