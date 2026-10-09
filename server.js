@@ -1886,7 +1886,7 @@ const server = http.createServer((req, res) => {
   serveFile(res, assetPath);
 });
 
-const wss = new WebSocket.Server({ noServer: true });
+const wss = new WebSocket.Server({ noServer: true, maxPayload: 65536 });
 const activeTerminalSessions = new Set();
 let shuttingDown = false;
 
@@ -2085,7 +2085,7 @@ wss.on("connection", (ws, requestUrl) => {
       return;
     }
 
-    if (message.type === "input" && typeof message.data === "string") {
+    if (message.type === "input" && typeof message.data === "string" && message.data.length <= 8192) {
       term.write(message.data);
     } else if (message.type === "resize") {
       const cols = Number.parseInt(message.cols, 10);
