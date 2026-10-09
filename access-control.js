@@ -21,6 +21,9 @@ function createAccessControl(options = {}) {
   }
 
   function originAllowed(req) {
+    // Restrict loopback hostnames to prevent DNS rebinding against the local PTY.
+    if (!network && !/^(localhost|127\.0\.0\.1|\[::1\])(?::\d{1,5})?$/i.test(String(req.headers.host || ""))) return false;
+    if (req.headers["sec-fetch-site"] === "cross-site") return false;
     if (!req.headers.origin) return true;
     try {
       const origin = new URL(req.headers.origin);
@@ -74,6 +77,10 @@ function createAccessControl(options = {}) {
   }
 
   function authorizeHttp(req, res, pathname) {
+    if (!originAllowed(req)) {
+      deny(res, 403, "Invalid origin or host.");
+      return false;
+    }
     if (pathname === "/api/login" && req.method === "POST") return true;
     if (network && !role(req)) {
       if (req.method === "GET" && (pathname === "/" || pathname === "/attackpath" || pathname === "/index.html")) {
