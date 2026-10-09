@@ -26,7 +26,7 @@ const STEP_BODIES = [
   "Correlate entrypoints, prerequisites, and evidence into plausible attack-path hypotheses.",
   "Review confirmed observations, outstanding questions, actions, and incomplete scans."
 ];
-const validJobs = new Set(["nmap", "nuclei", "c3po", "shodan"]);
+const validJobs = new Set(["demo", "nmap", "nuclei", "c3po", "shodan"]);
 const idPattern = /^[a-f0-9-]{36}$/;
 const maxOutput = 100000;
 
@@ -237,8 +237,24 @@ function createAttackPathService(rootDir) {
   }
   function execute(id, spec) {
     const project = read(id);
-    if (!project.scope.authorized) throw bad("Confirm authorization in Scope before scanning.", 403);
     if (!spec || !validJobs.has(spec.tool)) throw bad("Unsupported scanner.");
+    if (spec.tool === "demo") {
+      const job = { id: crypto.randomUUID(), tool: "demo", target: "synthetic.example.test",
+        status: "completed", scope: structuredClone(project.scope),
+        startedAt: new Date().toISOString(), finishedAt: new Date().toISOString(),
+        exitCode: 0, error: "",
+        output: JSON.stringify({ mode: "SYNTHETIC — NO NETWORK TRAFFIC",
+          hosts: [{ host: "synthetic.example.test", ip: "192.0.2.10",
+            services: [{ port: 443, protocol: "https", confidence: "simulated" }] }],
+          findings: [{ title: "Example exposed test application", confirmed: false,
+            impact: "Training example only — not a real vulnerability" }] }, null, 2),
+        summary: { status: "synthetic training evidence only", items: 1 } };
+      project.jobs.unshift(job);
+      project.jobs = project.jobs.slice(0, 60);
+      save(project);
+      return job;
+    }
+    if (!project.scope.authorized) throw bad("Confirm authorization in Scope before scanning.", 403);
     if (project.scope.profile === "passive" && spec.tool !== "shodan")
       throw bad("Passive profile does not allow active tools.", 403);
     const target = parseTarget(spec.target);
