@@ -1552,7 +1552,23 @@ function assetPathForUrl(urlPath) {
 }
 
 function serveFile(res, filePath) {
-  fs.stat(filePath, (err, stat) => {
+  // Static routes must not follow user-controlled symlinks outside the app.
+  let resolved;
+  try {
+    resolved = fs.realpathSync(filePath);
+    const permittedRoots = [rootDir, localNodeModulesDir, parentNodeModulesDir];
+    const allowed = permittedRoots.some((base) => {
+      const relative = path.relative(base, resolved);
+      return relative && relative !== ".." && !relative.startsWith(".." + path.sep) &&
+        !path.isAbsolute(relative);
+    });
+    if (!allowed) {
+      res.writeHead(404); res.end("Not found"); return;
+    }
+  } catch {
+    res.writeHead(404); res.end("Not found"); return;
+  }
+  fs.stat(resolved, (err, stat) => {
     if (err || !stat.isFile()) {
       res.writeHead(404, { "content-type": "text/plain; charset=utf-8" });
       res.end("Not found");
@@ -1565,7 +1581,7 @@ function serveFile(res, filePath) {
       "content-length": stat.size,
       "cache-control": "no-cache"
     });
-    const stream = fs.createReadStream(filePath);
+    const stream = fs.createReadStream(resolved);
     stream.on("error", (error) => {
       debugLog("static stream failed", error);
       if (!res.headersSent) {
@@ -1857,8 +1873,7 @@ const server = http.createServer((req, res) => {
   }
   const publicAssets = new Set(["/client.js", "/attackpath-ui.js", "/attackpath-overlay.js"]);
   const mediaAsset = /\.(?:png|jpg|jpeg|gif|webp|avif|svg|ico|woff2?|mp3|wav|flac|ogg|m4a)$/i.test(pathname);
-  if (!publicAssets.has(pathname) && !mediaAsset &&
-      !pathname.startsWith("/node_modules/") && !pathname.startsWith("/content/")) {
+  if (!publicAssets.has(pathname) && !mediaAsset && !pathname.startsWith("/node_modules/")) {
     res.writeHead(404); res.end("Not found"); return;
   }
   const assetPath = assetPathForUrl(pathname);
