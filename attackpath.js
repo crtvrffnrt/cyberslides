@@ -39,17 +39,17 @@ function cleanList(value, max = 100) {
   if (!Array.isArray(value) || value.length > max) throw bad("Expected a bounded array.");
   return value.map((v) => {
     if (typeof v !== "string" || !v.trim() || v.length > 256) throw bad("Invalid scope entry.");
-    return v.trim().toLowerCase();
+    return v.trim();
   });
 }
 function validateScope(raw) {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) throw bad("Scope must be an object.");
   const scope = {
-    domains: cleanList(raw.domains || []),
-    ips: cleanList(raw.ips || []),
-    cidrs: cleanList(raw.cidrs || []),
+    domains: cleanList(raw.domains || []).map((x) => x.toLowerCase()),
+    ips: cleanList(raw.ips || []).map((x) => x.toLowerCase()),
+    cidrs: cleanList(raw.cidrs || []).map((x) => x.toLowerCase()),
     urls: cleanList(raw.urls || []),
-    exclusions: cleanList(raw.exclusions || []),
+    exclusions: cleanList(raw.exclusions || []).map((x) => x.toLowerCase()),
     authorized: raw.authorized === true,
     profile: ["passive", "standard", "lab"].includes(raw.profile) ? raw.profile : "passive",
     maxSeconds: Math.min(600, Math.max(10, Number(raw.maxSeconds) || 90)),
@@ -117,7 +117,7 @@ function permitted(scope, parsed) {
   const host = parsed.host;
   if (scope.exclusions.some((e) => e === host || e === parsed.value.toLowerCase())) return false;
   if (net.isIP(host)) return scope.ips.includes(host) || scope.cidrs.some((c) => withinCidr(host, c));
-  if (parsed.isUrl && scope.urls.some((u) => u === parsed.value.toLowerCase())) return true;
+  if (parsed.isUrl && scope.urls.some((u) => u === parsed.value)) return true;
   return scope.domains.some((domain) =>
     domain.startsWith("*.") ? host.endsWith(domain.slice(1)) && host !== domain.slice(2) : host === domain);
 }
@@ -260,7 +260,7 @@ function createAttackPathService(rootDir) {
         "-T2", "--max-retries", "1", "-oX", "-", target.value];
     } else if (spec.tool === "nuclei") {
       program = "nuclei";
-      args = ["-u", target.value, "-jsonl", "-silent", "-severity", "high,medium,low",
+      args = ["-u", target.value, "-jsonl", "-silent", "-dr", "-pt", "http", "-severity", "high,medium,low",
         "-tags", "misconfig,exposure,ssl,tls,tech", "-etags", "dos,fuzz,headless,code,intrusive,bruteforce,dast,default-login",
         "-rate-limit", String(project.scope.maxRequestsPerSecond), "-concurrency", "1"];
     } else {
