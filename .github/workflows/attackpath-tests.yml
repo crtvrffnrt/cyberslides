@@ -1,0 +1,36 @@
+name: Attack Path tests
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [feature/attack-path-training]
+permissions:
+  contents: read
+jobs:
+  node-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: npm run check
+      - run: npm test
+      - name: HTTP smoke test
+        run: |
+          set -euo pipefail
+          PORT=9876 node server.js >/tmp/cyberslides.log 2>&1 &
+          server_pid=$!
+          trap 'kill $server_pid 2>/dev/null || true' EXIT
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:9876/api/health >/dev/null; then break; fi
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:9876/api/health | grep -q '"ok": true'
+          curl -fsS http://127.0.0.1:9876/attackpath | grep -q 'Create guided assessment'
+          curl -fsS http://127.0.0.1:9876/api/attackpath/projects | grep -q '"projects"'
+          curl -fsS http://127.0.0.1:9876/ | grep -q 'attackpath-overlay.js'
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:9876/server.js)" = 404
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:9876/attackpath-data/abc.json)" = 404
