@@ -3,9 +3,14 @@ const http = require("http");
 const path = require("path");
 const WebSocket = require("ws");
 const pty = require("node-pty");
+const { createAccessControl } = require("./access-control");
+const { createAttackPathService } = require("./attackpath");
 
 const fsp = fs.promises;
 const rootDir = __dirname;
+const attackPath = createAttackPathService(rootDir);
+const hostAddress = process.env.HOST || "127.0.0.1";
+const accessControl = createAccessControl({ host: hostAddress });
 const parentDir = path.resolve(rootDir, "..");
 const contentDir = path.join(rootDir, "content");
 const localNodeModulesDir = path.join(rootDir, "node_modules");
@@ -1547,7 +1552,23 @@ function assetPathForUrl(urlPath) {
 }
 
 function serveFile(res, filePath) {
-  fs.stat(filePath, (err, stat) => {
+  // Static routes must not follow user-controlled symlinks outside the app.
+  let resolved;
+  try {
+    resolved = fs.realpathSync(filePath);
+    const permittedRoots = [rootDir, localNodeModulesDir, parentNodeModulesDir];
+    const allowed = permittedRoots.some((base) => {
+      const relative = path.relative(base, resolved);
+      return relative && relative !== ".." && !relative.startsWith(".." + path.sep) &&
+        !path.isAbsolute(relative);
+    });
+    if (!allowed) {
+      res.writeHead(404); res.end("Not found"); return;
+    }
+  } catch {
+    res.writeHead(404); res.end("Not found"); return;
+  }
+  fs.stat(resolved, (err, stat) => {
     if (err || !stat.isFile()) {
       res.writeHead(404, { "content-type": "text/plain; charset=utf-8" });
       res.end("Not found");
@@ -1558,9 +1579,11 @@ function serveFile(res, filePath) {
     res.writeHead(200, {
       "content-type": contentType,
       "content-length": stat.size,
-      "cache-control": "no-cache"
+      "cache-control": "no-cache",
+      "x-content-type-options": "nosniff",
+      "referrer-policy": "no-referrer"
     });
-    const stream = fs.createReadStream(filePath);
+    const stream = fs.createReadStream(resolved);
     stream.on("error", (error) => {
       debugLog("static stream failed", error);
       if (!res.headersSent) {
@@ -1641,10 +1664,10 @@ function sendJson(res, statusCode, value) {
   res.end(body);
 }
 
-async function handlePresentationApi(req, res) {
+async function handlePresentationApi(req, res, projectId = null) {
   try {
     if (req.method === "GET") {
-      const config = readJson(configPath);
+      const config = projectId ? attackPath.getPresentation(projectId) : readJson(configPath);
       const normalized = normalizePresentation(config);
       sendJson(res, 200, normalized);
       return;
@@ -1664,11 +1687,12 @@ async function handlePresentationApi(req, res) {
     const payload = await readRequestJson(req);
     const validated = validatePresentationPayload(payload);
     const normalized = normalizePresentation(validated.config);
-    const previousConfig = readJson(configPath);
+    const previousConfig = projectId ? attackPath.getPresentation(projectId) : readJson(configPath);
     const materialized = await materializeImageAssets(normalized.config);
     const nextConfig = materialized.config;
-    await queuePresentationWrite(nextConfig);
-    await deleteUnusedContentAssets(previousConfig, nextConfig);
+    if (projectId) attackPath.savePresentation(projectId, nextConfig);
+    else await queuePresentationWrite(nextConfig);
+    if (!projectId) await deleteUnusedContentAssets(previousConfig, nextConfig);
     const nextNormalized = normalizePresentation(nextConfig);
     debugLog("saved presentation", `${nextNormalized.contentSlides.length} slides`);
     sendJson(res, 200, nextNormalized);
@@ -1740,9 +1764,9 @@ async function handleAudioApi(res) {
   sendJson(res, 200, { tracks });
 }
 
-function buildDeckHtml() {
+function buildDeckHtml(projectId = null) {
   const template = readText(templatePath);
-  const config = readJson(configPath);
+  const config = projectId ? attackPath.getPresentation(projectId) : readJson(configPath);
   const normalized = normalizePresentation(config);
   const renderedSlides = renderSlides(normalized.contentSlides, normalized.config);
   const theme = config.theme || {};
@@ -1771,7 +1795,12 @@ function buildDeckHtml() {
       }
     }));
 
-  return html;
+  const background = attackPath.discoverBackground();
+  const backgroundCss = background ?
+    '<style>.deck { background-image: linear-gradient(rgba(5,8,12,.70),rgba(5,8,12,.70)),url(' +
+    JSON.stringify(background) + '); background-position:center;background-size:cover }</style>' : '';
+  return html.replace("</head>", backgroundCss + '</head>')
+    .replace("</body>", '<script src="/attackpath-overlay.js" defer></script></body>');
 }
 
 const server = http.createServer((req, res) => {
@@ -1784,10 +1813,26 @@ const server = http.createServer((req, res) => {
 
   const requestUrl = new URL(req.url || "/", `http://${req.headers.host || "127.0.0.1"}`);
   const { pathname } = requestUrl;
+  if (!accessControl.authorizeHttp(req, res, pathname)) return;
+  if (pathname === "/api/login" && req.method === "POST") {
+    readRequestJson(req).then((body) => accessControl.login(req, res, body))
+      .catch(() => sendJson(res, 400, { error: "Invalid login request." }));
+    return;
+  }
+  if (pathname.startsWith("/api/attackpath/")) {
+    attackPath.handle(req, res, pathname, readRequestJson, sendJson).catch(() => {
+      if (!res.writableEnded) sendJson(res, 500, { error: "Request failed." });
+    });
+    return;
+  }
+  if (pathname === "/attackpath") {
+    serveFile(res, path.join(rootDir, "attackpath.html"));
+    return;
+  }
 
   if (pathname === "/" || pathname === "/index.html") {
     try {
-      const html = buildDeckHtml();
+      const html = buildDeckHtml(requestUrl.searchParams.get("project"));
       res.writeHead(200, { "content-type": "text/html; charset=utf-8", "cache-control": "no-cache" });
       res.end(html);
     } catch (error) {
@@ -1799,7 +1844,7 @@ const server = http.createServer((req, res) => {
   }
 
   if (pathname === "/api/presentation") {
-    handlePresentationApi(req, res).catch((error) => {
+    handlePresentationApi(req, res, requestUrl.searchParams.get("project")).catch((error) => {
       debugLog("api failed", error);
       if (!res.writableEnded) {
         sendJson(res, 500, { error: "Presentation API failed.", detail: debugEnabled ? error.message : undefined });
@@ -1823,6 +1868,16 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  if (pathname.startsWith("/attackpath-data/") || pathname.startsWith("/.git/") ||
+      pathname.split("/").some((segment) => segment.startsWith(".") && segment.length > 1) ||
+      ["/server.js", "/attackpath.js", "/access-control.js", "/presentation.config.json"].includes(pathname)) {
+    res.writeHead(404); res.end("Not found"); return;
+  }
+  const publicAssets = new Set(["/client.js", "/attackpath-ui.js", "/attackpath-overlay.js"]);
+  const mediaAsset = /\.(?:png|jpg|jpeg|gif|webp|avif|ico|woff2?|mp3|wav|flac|ogg|m4a)$/i.test(pathname);
+  if (!publicAssets.has(pathname) && !mediaAsset && !pathname.startsWith("/node_modules/")) {
+    res.writeHead(404); res.end("Not found"); return;
+  }
   const assetPath = assetPathForUrl(pathname);
   if (!assetPath) {
     res.writeHead(400, { "content-type": "text/plain; charset=utf-8" });
@@ -1833,7 +1888,7 @@ const server = http.createServer((req, res) => {
   serveFile(res, assetPath);
 });
 
-const wss = new WebSocket.Server({ noServer: true });
+const wss = new WebSocket.Server({ noServer: true, maxPayload: 65536 });
 const activeTerminalSessions = new Set();
 let shuttingDown = false;
 
@@ -1932,7 +1987,7 @@ server.on("upgrade", (req, socket, head) => {
   }
 
   const requestUrl = new URL(req.url || "/", `http://${req.headers.host || "127.0.0.1"}`);
-  if (requestUrl.pathname !== "/terminal") {
+  if (requestUrl.pathname !== "/terminal" || !accessControl.authorizeUpgrade(req)) {
     socket.destroy();
     return;
   }
@@ -2032,7 +2087,7 @@ wss.on("connection", (ws, requestUrl) => {
       return;
     }
 
-    if (message.type === "input" && typeof message.data === "string") {
+    if (message.type === "input" && typeof message.data === "string" && message.data.length <= 8192) {
       term.write(message.data);
     } else if (message.type === "resize") {
       const cols = Number.parseInt(message.cols, 10);
@@ -2062,6 +2117,7 @@ function shutdown(signal) {
   }
 
   shuttingDown = true;
+  attackPath.shutdown();
   debugLog("shutdown requested", signal);
   clearInterval(heartbeatInterval);
 
@@ -2095,6 +2151,7 @@ function shutdown(signal) {
 process.once("SIGINT", () => shutdown("SIGINT"));
 process.once("SIGTERM", () => shutdown("SIGTERM"));
 process.once("exit", () => {
+  attackPath.shutdown();
   clearInterval(heartbeatInterval);
   for (const session of Array.from(activeTerminalSessions)) {
     teardownTerminalSession(session, { killPty: true });
@@ -2102,8 +2159,8 @@ process.once("exit", () => {
 });
 
 function listen(port) {
-  server.listen(port, "127.0.0.1", () => {
-    console.log(`Presentation tool running at http://127.0.0.1:${port}/`);
+  server.listen(port, hostAddress, () => {
+    console.log(`Cyberslides listening at http://${hostAddress}:${port}/`);
   });
 }
 
