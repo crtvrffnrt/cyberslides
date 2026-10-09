@@ -41,6 +41,21 @@
   const scopeLink = element("a", "Edit authorized scope");
   scopeLink.href = "/attackpath";
   const profile = element("p", "", "ap-muted");
+  const advisor = element("p", "", "ap-muted");
+  const guidance = [
+    "Prepare the scope and engagement rules before active work.",
+    "Scope must explicitly authorize each active target.",
+    "Start with passive evidence, then distinguish observed and inferred assets.",
+    "Compare indexed Shodan services against current observations; historical ports can be stale.",
+    "Confirm newly discovered DNS hosts are in scope before scanning.",
+    "Use a bounded Nmap pass to validate exposed services.",
+    "Review HTTP status, technology signals, TLS and redirects; cross-check weak fingerprints.",
+    "Map endpoints and trust boundaries; do not assume every discovered route is vulnerable.",
+    "Treat Nuclei matches as hypotheses until manually reproduced.",
+    "Link findings, prerequisites, and evidence into a coherent attack-path hypothesis.",
+    "Record confidence, unresolved questions, and reproducible supporting artifacts."
+  ];
+  let previousSlide = -1;
   const label = element("label", "Scanner");
   const tool = element("select");
   for (const [value, title] of [["shodan", "Shodan host intelligence"], ["nmap", "Nmap service scan"],
@@ -53,7 +68,7 @@
   const run = element("button", "Run approved scan");
   const reload = element("button", "Refresh", "alt"); runRow.append(run, reload);
   const jobs = element("div");
-  detail.append(step, status, scopeLink, profile, element("hr"), label, tool, targetLabel, target, runRow,
+  detail.append(step, status, scopeLink, profile, advisor, element("hr"), label, tool, targetLabel, target, runRow,
     element("h4", "Recorded scans"), jobs);
   panel.append(detail);
   document.body.append(panel);
@@ -79,6 +94,13 @@
     const index = activeSlide();
     step.textContent = index === 0 ? "Cover" : index === 1 ? "Scope & authorization" :
       "Training step " + (index - 1) + " / 10";
+    advisor.textContent = guidance[index] || "Review relevant evidence and next tests.";
+    if (previousSlide !== index) {
+      previousSlide = index;
+      if (index === 3) tool.value = "shodan";
+      if (index === 5) tool.value = "nmap";
+      if (index === 8) tool.value = "nuclei";
+    }
     if (index === 1) status.textContent = "Use the scope editor to authorize or exclude assets.";
     else if (index === 0) status.textContent = "Select a slide to explore reconnaissance and testing.";
   }
@@ -109,6 +131,7 @@
         });
         div.append(cancel);
       }
+      if (job.summary) div.append(element("pre", JSON.stringify(job.summary, null, 2)));
       if (job.output) div.append(element("pre", job.output.slice(0, 14000)));
       if (job.error) div.append(element("pre", job.error.slice(0, 3000)));
       jobs.append(div);
