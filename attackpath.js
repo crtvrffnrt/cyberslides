@@ -167,6 +167,39 @@ function discoverBackground(rootDir) {
   });
   return found[0] ? "/" + found[0].split(path.sep).map(encodeURIComponent).join("/") : null;
 }
+function summarize(tool, output) {
+  const text = String(output || "");
+  if (!text.trim()) return { items: 0, note: "No structured observations received." };
+  if (tool === "nuclei") {
+    const findings = text.split("\n").filter(Boolean).flatMap((line) => {
+      try { const item = JSON.parse(line);
+        return item && typeof item === "object" ? [{
+          template: item["template-id"] || item.templateID || "unknown",
+          severity: item.info?.severity || "unknown", target: item["matched-at"] || item.host || ""
+        }] : [];
+      } catch { return []; }
+    });
+    return { items: findings.length, findings: findings.slice(0, 25), status: "scanner leads; manual validation required" };
+  }
+  if (tool === "shodan") {
+    try { const data = JSON.parse(text);
+      return { ip: data.ip_str || "", ports: Array.isArray(data.ports) ? data.ports : [],
+        lastSeen: data.last_update || null, status: "historic indexed observations" };
+    } catch { return { items: 0, note: "Shodan response was not valid JSON." }; }
+  }
+  if (tool === "c3po") {
+    try { const data = JSON.parse(text);
+      return { schema: data.schema_version || data.schema || "unrecognized", keys: Object.keys(data).slice(0, 30),
+        status: "review the full C3PO structured evidence before confirming claims" };
+    } catch { return { items: 0, note: "C3PO output was not valid JSON." }; }
+  }
+  if (tool === "nmap") {
+    const ports = [...text.matchAll(/<port\b[^>]*portid="(\d+)"[^>]*>[\s\S]*?<state\b[^>]*state="open"/g)];
+    return { items: ports.length, openPorts: [...new Set(ports.map((m) => Number(m[1])))].slice(0, 100),
+      status: "scanner observations" };
+  }
+  return { items: 0 };
+}
 function createAttackPathService(rootDir) {
   const directory = path.join(rootDir, "attackpath-data");
   fs.mkdirSync(directory, { recursive: true, mode: 0o700 });
@@ -225,6 +258,7 @@ function createAttackPathService(rootDir) {
       const fresh = read(id), stored = fresh.jobs.find((j) => j.id === job.id);
       if (!stored || stored.status !== "running") return;
       stored.status = status;
+      stored.summary = summarize(stored.tool, stored.output);
       stored.exitCode = exitCode;
       stored.finishedAt = new Date().toISOString();
       if (message) stored.error = message.slice(0, 1200);
@@ -356,4 +390,4 @@ function createAttackPathService(rootDir) {
     savePresentation: (id, config) => { const p = read(id); p.presentation = config; save(p); },
     discoverBackground: () => discoverBackground(rootDir) };
 }
-module.exports = { createAttackPathService, validateScope, parseTarget, permitted, withinCidr, createDeck, discoverBackground };
+module.exports = { createAttackPathService, validateScope, parseTarget, permitted, withinCidr, createDeck, discoverBackground, summarize };
