@@ -14,3 +14,8 @@ node_modules/
 .env
 *.log
 .DS_Store
+
+# Local authorized assessment sessions and evidence
+attackpath-data/
+.env
+.env.*
