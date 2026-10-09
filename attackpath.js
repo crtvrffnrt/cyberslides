@@ -402,7 +402,26 @@ function createAttackPathService(rootDir) {
       reply(res, error.statusCode || 500, { error: error.statusCode ? error.message : "Attack Path service failed." });
     }
   }
-  return { handle, read, save, getPresentation: (id) => read(id).presentation,
+  function shutdown() {
+    for (const [jobId, handle] of running) {
+      try { handle.kill(); } catch { /* Already exited. */ }
+      running.delete(jobId);
+    }
+    for (const entry of fs.readdirSync(directory)) {
+      if (!/^[a-f0-9-]{36}\.json$/.test(entry)) continue;
+      try {
+        const p = read(entry.slice(0, -5));
+        let changed = false;
+        for (const job of p.jobs) if (job.status === "running") {
+          job.status = "interrupted";
+          job.finishedAt = new Date().toISOString();
+          changed = true;
+        }
+        if (changed) save(p);
+      } catch { /* Preserve other sessions. */ }
+    }
+  }
+  return { handle, read, save, shutdown, getPresentation: (id) => read(id).presentation,
     savePresentation: (id, config) => { const p = read(id); p.presentation = config; save(p); },
     discoverBackground: () => discoverBackground(rootDir) };
 }
