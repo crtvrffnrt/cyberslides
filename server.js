@@ -1579,7 +1579,9 @@ function serveFile(res, filePath) {
     res.writeHead(200, {
       "content-type": contentType,
       "content-length": stat.size,
-      "cache-control": "no-cache"
+      "cache-control": "no-cache",
+      "x-content-type-options": "nosniff",
+      "referrer-policy": "no-referrer"
     });
     const stream = fs.createReadStream(resolved);
     stream.on("error", (error) => {
@@ -1872,7 +1874,7 @@ const server = http.createServer((req, res) => {
     res.writeHead(404); res.end("Not found"); return;
   }
   const publicAssets = new Set(["/client.js", "/attackpath-ui.js", "/attackpath-overlay.js"]);
-  const mediaAsset = /\.(?:png|jpg|jpeg|gif|webp|avif|svg|ico|woff2?|mp3|wav|flac|ogg|m4a)$/i.test(pathname);
+  const mediaAsset = /\.(?:png|jpg|jpeg|gif|webp|avif|ico|woff2?|mp3|wav|flac|ogg|m4a)$/i.test(pathname);
   if (!publicAssets.has(pathname) && !mediaAsset && !pathname.startsWith("/node_modules/")) {
     res.writeHead(404); res.end("Not found"); return;
   }
