@@ -1855,6 +1855,12 @@ const server = http.createServer((req, res) => {
       ["/server.js", "/attackpath.js", "/access-control.js", "/presentation.config.json"].includes(pathname)) {
     res.writeHead(404); res.end("Not found"); return;
   }
+  const publicAssets = new Set(["/client.js", "/attackpath-ui.js", "/attackpath-overlay.js"]);
+  const mediaAsset = /\.(?:png|jpg|jpeg|gif|webp|avif|svg|ico|woff2?|mp3|wav|flac|ogg|m4a)$/i.test(pathname);
+  if (!publicAssets.has(pathname) && !mediaAsset &&
+      !pathname.startsWith("/node_modules/") && !pathname.startsWith("/content/")) {
+    res.writeHead(404); res.end("Not found"); return;
+  }
   const assetPath = assetPathForUrl(pathname);
   if (!assetPath) {
     res.writeHead(400, { "content-type": "text/plain; charset=utf-8" });
