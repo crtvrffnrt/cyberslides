@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cyberslides | Attack Path</title>
+<style>
+:root{color-scheme:dark;font-family:system-ui,-apple-system,Segoe UI,sans-serif;background:#101114;color:#ebeff2}
+*{box-sizing:border-box}body{margin:0}header{display:flex;justify-content:space-between;align-items:center;padding:20px clamp(20px,5vw,72px);border-bottom:1px solid #30343d;background:#17191d}h1{margin:0;font-size:26px}header a,a{color:#92ffad}main{max-width:1160px;margin:30px auto;padding:0 20px}h2{margin-top:0}section{background:#1b1e24;border:1px solid #343943;border-radius:12px;padding:24px;margin-bottom:20px}
+.two{display:grid;grid-template-columns:1fr 2fr;gap:20px}.cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+label{display:block;color:#c6d0db;font-size:14px;margin-bottom:7px}input,textarea,select{width:100%;background:#101217;color:white;border:1px solid #515661;border-radius:6px;padding:10px;font:inherit;min-height:42px}textarea{min-height:90px;resize:vertical}
+button,.button{display:inline-block;border:0;background:#7dff9b;color:#08120b;padding:10px 16px;border-radius:7px;font-weight:700;cursor:pointer;text-decoration:none;font-size:14px}
+.secondary{background:#353e4a;color:white}.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.muted{color:#a6adbb}.project{border-bottom:1px solid #343943;padding:12px 0}.project:last-child{border-bottom:0}
+#status{min-height:25px;color:#a5ffb8}small{color:#a9afba}.checkbox{display:flex;align-items:center;gap:10px}.checkbox input{width:auto;min-height:auto}
+@media(max-width:760px){.two,.cols{grid-template-columns:1fr}header{gap:12px;flex-wrap:wrap}}
+</style>
+</head>
+<body>
+<header><h1>CYBERSLIDES <span style="color:#7dff9b">/ Attack Path</span></h1><nav><a href="/">Classic Presentation</a></nav></header>
+<main>
+<section>
+<h2>Create guided assessment</h2>
+<p class="muted">One cover, one scope slide and ten evidence-driven training steps. No network activity runs automatically.</p>
+<div class="row"><input id="name" aria-label="Assessment name" placeholder="Engagement name, e.g. HTB lab walkthrough" style="max-width:540px"><button id="create">Create session</button></div>
+</section>
+<div class="two">
+<section><h2>Saved sessions</h2><div id="projects" class="muted">Loading…</div></section>
+<section id="editor" hidden>
+<h2 id="projectName">Scope</h2><p class="muted">Explicit authorization and target restrictions are required before scanning. Separate entries with a newline.</p>
+<div class="cols">
+<div><label for="domains">Authorized domains (exact or *.subdomain wildcard)</label><textarea id="domains" placeholder="example.com"></textarea></div>
+<div><label for="ips">Authorized individual IP addresses</label><textarea id="ips" placeholder="192.0.2.10"></textarea></div>
+<div><label for="cidrs">Authorized CIDR ranges</label><textarea id="cidrs" placeholder="192.0.2.0/28"></textarea></div>
+<div><label for="urls">Explicit authorized HTTP(S) URLs</label><textarea id="urls" placeholder="https://app.example.com/"></textarea></div>
+<div><label for="exclusions">Excluded hosts or exact URLs</label><textarea id="exclusions"></textarea></div>
+<div><label for="profile">Assessment profile</label><select id="profile"><option value="passive">Passive only</option><option value="standard">Standard authorized testing</option><option value="lab">HTB / CTF / private lab</option></select>
+<label for="maxSeconds">Maximum scan duration (seconds)</label><input id="maxSeconds" type="number" min="10" max="600" value="90">
+<label for="rate">Maximum requests/second</label><input id="rate" type="number" min="1" max="10" value="2"></div>
+</div>
+<p class="checkbox"><input type="checkbox" id="authorized"><label for="authorized">I confirm explicit authorization for these assets and the selected test profile.</label></p>
+<div class="row"><button id="save">Save scope</button><a class="button secondary" id="openDeck" href="/">Open guided slides</a></div>
+</section>
+</div>
+<p role="status" id="status"></p>
+</main>
+<script src="/attackpath-ui.js" defer></script>
+</body>
+</html>
