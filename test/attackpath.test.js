@@ -69,6 +69,10 @@ test("projects persist, create 12 slides, and block scans without authorization"
     assert.equal(result.code, 201);
     const id = result.body.project.id;
     assert.equal(result.body.project.presentation.slides.length, 12);
+    const demo = await call("/api/attackpath/projects/" + id + "/jobs", "POST", { tool: "demo" });
+    assert.equal(demo.code, 201);
+    assert.equal(demo.body.job.status, "completed");
+    assert.match(demo.body.job.output, /NO NETWORK TRAFFIC/);
     result = await call("/api/attackpath/projects/" + id + "/jobs", "POST",
       { tool: "nmap", target: "192.0.2.10" });
     assert.equal(result.code, 403);
