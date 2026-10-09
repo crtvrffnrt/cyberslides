@@ -2350,7 +2350,7 @@
     normalizeDraft();
     setEditorStatus("Saving...");
     try {
-      const response = await fetch("/api/presentation", {
+      const response = await fetch("/api/presentation" + (new URLSearchParams(window.location.search).has("project") ? window.location.search : ""), {
         method: "PUT",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
