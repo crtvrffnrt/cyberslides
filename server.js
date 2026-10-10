@@ -3,6 +3,7 @@ const http = require("http");
 const path = require("path");
 const WebSocket = require("ws");
 const pty = require("node-pty");
+const { loadNetworkConfig, resolveBindTargets } = require("./network");
 
 const fsp = fs.promises;
 const rootDir = __dirname;
@@ -1821,7 +1822,7 @@ function buildDeckHtml() {
   return html;
 }
 
-const server = http.createServer((req, res) => {
+function handleHttpRequest(req, res) {
   const rawPath = (req.url || "/").split("?")[0] || "/";
   if (rawPathIsUnsafe(rawPath)) {
     res.writeHead(400, { "content-type": "text/plain; charset=utf-8" });
@@ -1878,7 +1879,7 @@ const server = http.createServer((req, res) => {
   }
 
   serveFile(res, assetPath);
-});
+}
 
 const wss = new WebSocket.Server({ noServer: true });
 const activeTerminalSessions = new Set();
@@ -1971,7 +1972,7 @@ const heartbeatInterval = setInterval(() => {
 
 heartbeatInterval.unref();
 
-server.on("upgrade", (req, socket, head) => {
+function handleUpgrade(req, socket, head) {
   const rawPath = (req.url || "/").split("?")[0] || "/";
   if (rawPathIsUnsafe(rawPath)) {
     socket.destroy();
@@ -1987,7 +1988,7 @@ server.on("upgrade", (req, socket, head) => {
   wss.handleUpgrade(req, socket, head, (ws) => {
     wss.emit("connection", ws, requestUrl);
   });
-});
+}
 
 wss.on("connection", (ws, requestUrl) => {
   ws.isAlive = true;
@@ -2108,7 +2109,9 @@ wss.on("connection", (ws, requestUrl) => {
   });
 });
 
-function shutdown(signal) {
+const servers = new Set();
+
+function shutdown(signal, exitCode = 0) {
   if (shuttingDown) {
     return;
   }
@@ -2135,12 +2138,21 @@ function shutdown(signal) {
   }
 
   wss.close();
-  server.close(() => {
-    process.exit(0);
-  });
+  if (servers.size === 0) {
+    process.exit(exitCode);
+  }
+  let remaining = servers.size;
+  for (const server of servers) {
+    server.close(() => {
+      remaining -= 1;
+      if (remaining === 0) {
+        process.exit(exitCode);
+      }
+    });
+  }
 
   setTimeout(() => {
-    process.exit(0);
+    process.exit(exitCode);
   }, shutdownGraceMs).unref();
 }
 
@@ -2153,23 +2165,43 @@ process.once("exit", () => {
   }
 });
 
-function listen(port) {
-  server.listen(port, "127.0.0.1", () => {
-    console.log(`Presentation tool running at http://127.0.0.1:${port}/`);
-  });
-}
-
-const preferredPort = Number.parseInt(process.env.PORT || "8080", 10);
-let activePort = Number.isFinite(preferredPort) ? preferredPort : 8080;
-
-server.on("error", (error) => {
-  if (error.code === "EADDRINUSE") {
-    activePort += 1;
-    listen(activePort);
-    return;
+async function startServers() {
+  const config = loadNetworkConfig();
+  const targets = resolveBindTargets(config);
+  const started = [];
+  try {
+    for (const target of targets) {
+      const server = http.createServer(handleHttpRequest);
+      server.on("upgrade", handleUpgrade);
+      await new Promise((resolve, reject) => {
+        server.once("error", reject);
+        server.listen({ port: config.port, ...target }, () => {
+          server.removeListener("error", reject);
+          resolve();
+        });
+      });
+      server.on("error", (error) => {
+        console.error(`Network listener failed on ${target.host}:${config.port}: ${error.message}`);
+        shutdown("Network listener failed", 1);
+      });
+      started.push(server);
+      servers.add(server);
+    }
+  } catch (error) {
+    await Promise.all(started.map((server) => new Promise((resolve) => server.close(resolve))));
+    throw error;
   }
 
-  throw error;
-});
+  for (const target of targets) {
+    const host = target.host.includes(":") ? `[${target.host}]` : target.host;
+    console.log(`Presentation tool running at http://${host}:${config.port}/`);
+  }
+  if (config.mode !== "localhost") {
+    console.warn("Network access is enabled. The editor and terminal have no built-in authentication; use a trusted network or an authenticated reverse proxy.");
+  }
+}
 
-listen(activePort);
+startServers().catch((error) => {
+  console.error(`Failed to start presentation server: ${error.message}`);
+  process.exitCode = 1;
+});

@@ -51,6 +51,8 @@ npm install
 npm start
 ```
 
+Before `npm start`, edit `network.config.json` in the project root to choose where the server listens. Changes take effect on the next start.
+
 If you are on a different Linux distro, install the same native build prerequisites through your package manager, then run `npm install` and `npm start`.
 
 When the server boots, it prints the local URL, usually:
@@ -58,6 +60,23 @@ When the server boots, it prints the local URL, usually:
 ```text
 http://127.0.0.1:8080/
 ```
+
+### Network access
+
+The included `network.config.json` keeps the server on IPv4 localhost:
+
+```json
+{
+  "mode": "localhost",
+  "port": 8080,
+  "family": "ipv4",
+  "interfaces": []
+}
+```
+
+Set `mode` to `all` to listen on every IPv4 address, including LAN and public addresses. Set `family` to `dual` to include IPv6 as well. To listen only on named network interfaces, set `mode` to `interfaces` and list their operating-system names, for example `"interfaces": ["eth0", "wlan0"]`. The server binds every address of the selected family on those interfaces. Use `family: "ipv6"` for IPv6 only. `PORT` overrides the file's `port` when set by a deployment environment.
+
+The server fails at startup if a selected interface does not exist, has no matching address, or the port is unavailable. Binding to all addresses makes the app reachable wherever routing and firewall rules permit; it does not publish it to the Internet by itself. **The editor and terminal have no built-in authentication.** For Internet access, put an authenticated reverse proxy in front of the app and restrict direct access to its listening port.
 
 ## Presenting
 
@@ -172,6 +191,7 @@ You change the draft in the browser, save it back to disk, and the rendered deck
 ## Project Structure
 
 - `server.js`: HTTP server, markdown rendering, slide normalization, save API, health API, and terminal WebSocket bridge.
+- `network.js` and `network.config.json`: startup validation and HTTP/WebSocket bind addresses.
 - `client.js`: presenter navigation, Edit Mode draft state, save flow, image input, progress dots, and terminal connection.
 - `index.template.html`: page shell, slide layout, terminal layout, editor controls, and presentation styling.
 - `presentation.config.json`: title, theme, cover metadata, slide content, slide types, image state, and terminal settings.
