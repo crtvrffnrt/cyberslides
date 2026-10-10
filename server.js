@@ -21,7 +21,9 @@ const shutdownGraceMs = 1500;
 const debugEnabled = process.env.PRESENTATION_DEBUG === "1" || process.env.NODE_ENV === "development";
 const allowedTemplateTypes = new Set(["cover", "terminalText", "text", "image", "terminalFocused", "dense"]);
 const allowedPayloadKeys = new Set(["config", "contentSlides"]);
-const allowedConfigKeys = new Set(["title", "theme", "defaults", "cover", "metadata", "presenter", "slides", "contentSlides"]);
+const allowedConfigKeys = new Set(["title", "theme", "defaults", "cover", "metadata", "presenter", "background", "slides", "contentSlides"]);
+const allowedBackgroundKeys = new Set(["active", "images"]);
+const allowedBackgroundImageKeys = new Set(["src", "name"]);
 const allowedThemeKeys = new Set(["background", "foreground", "muted", "accent"]);
 const allowedDefaultsKeys = new Set(["textScale", "headingScale", "bodyScale", "terminal"]);
 const allowedTerminalThemeKeys = new Set(["background", "foreground", "cursor", "selectionBackground"]);
@@ -32,7 +34,7 @@ const allowedPresenterKeys = new Set(["name", "role", "contact", "website", "git
 const allowedSlideKeys = new Set(["type", "layout", "terminal", "mustReadUrl", "image", "headingScale", "bodyScale", "textScale"]);
 const allowedTerminalKeys = new Set(["enabled", "leftVw", "topVh", "widthVw", "heightVh", "position", "title", "shell", "cwd", "fontSize", "theme"]);
 const allowedImageKeys = new Set(["src", "alt", "x", "y", "scale"]);
-const allowedLayouts = new Set(["cover", "hero", "center"]);
+const allowedLayouts = new Set(["cover", "hero", "center", "terminal", "dense"]);
 const terminalTemplateGeometry = {
   terminalText: {
     leftVw: 46,
@@ -251,7 +253,8 @@ function renderCopyButton(text, label = "Copy") {
 
 function renderCodeBlock(code, language) {
   const className = language ? ` class="language-${escapeHtml(language)}"` : "";
-  return `<div class="markdown-code-block">${renderCopyButton(code)}<pre><code${className}>${highlightCode(code, language)}</code></pre></div>`;
+  const executable = ["bash", "sh", "shell", "zsh"].includes(String(language || "").toLowerCase());
+  return `<div class="markdown-code-block"><div class="markdown-code-actions">${renderCopyButton(code)}${executable ? `<button class="markdown-execute-button" type="button" data-command="${escapeHtml(String(code ?? ""))}" title="Run in this slide's terminal">Execute</button>` : ""}</div><pre><code${className}>${highlightCode(code, language)}</code></pre></div>`;
 }
 
 function trimBlankEdges(lines) {
@@ -710,6 +713,12 @@ function collectImageSources(config) {
     }
   }
 
+  for (const image of config?.background?.images || []) {
+    if (typeof image?.src === "string" && image.src) {
+      sources.add(image.src);
+    }
+  }
+
   return sources;
 }
 
@@ -756,6 +765,13 @@ async function materializeImageAssets(config) {
     const assetSrc = await writeImageAssetFromDataUrl(src, slide.image.alt || slide.type || "image", index);
     slide.image.src = assetSrc;
     changed = true;
+  }
+
+  for (const image of nextConfig.background?.images || []) {
+    if (isDataImageUrl(image.src)) {
+      image.src = await writeImageAssetFromDataUrl(image.src, image.name || "background", 0);
+      changed = true;
+    }
   }
 
   return { config: nextConfig, changed };
@@ -1074,6 +1090,34 @@ function validateTheme(theme, label, allowedKeys) {
   });
 }
 
+function validateBackground(background) {
+  if (background === undefined) {
+    return;
+  }
+  assertPlainObject(background, "background");
+  assertAllowedKeys(background, allowedBackgroundKeys, "background");
+  if (!Array.isArray(background.images) || background.images.length > 20) {
+    throw validationError("background.images must be an array of up to 20 images.");
+  }
+  if (!Number.isInteger(background.active) || background.active < -1 || background.active >= background.images.length) {
+    throw validationError("background.active must select an uploaded image or the default.");
+  }
+  background.images.forEach((image, index) => {
+    assertPlainObject(image, `background.images[${index}]`);
+    assertAllowedKeys(image, allowedBackgroundImageKeys, `background.images[${index}]`);
+    assertOptionalString(image.name, `background.images[${index}].name`);
+    if (typeof image.src !== "string" || !(isDataImageUrl(image.src) || contentAssetUrlToPath(image.src))) {
+      throw validationError(`background.images[${index}].src must be an uploaded image.`);
+    }
+    if (isDataImageUrl(image.src)) {
+      const { mimeType, buffer } = parseDataImageUrl(image.src);
+      if (!new Set(["image/png", "image/jpeg", "image/webp", "image/gif", "image/avif"]).has(mimeType) || buffer.length > 10 * 1024 * 1024) {
+        throw validationError(`background.images[${index}] must be a supported image under 10 MB.`);
+      }
+    }
+  });
+}
+
 function validateDefaultTerminal(terminal, label) {
   if (terminal === undefined) {
     return;
@@ -1251,6 +1295,7 @@ function validatePresentationPayload(payload) {
 
   assertOptionalString(inputConfig.title, "payload.config.title");
   validateTheme(inputConfig.theme, "payload.config.theme", allowedThemeKeys);
+  validateBackground(inputConfig.background);
   validateDefaults(inputConfig.defaults, "payload.config.defaults");
   validateCover(inputConfig.cover, "payload.config.cover");
   validateStringObject(inputConfig.metadata, "payload.config.metadata", allowedMetadataKeys);
@@ -1276,6 +1321,7 @@ function normalizePresentation(config) {
   return {
     config: {
       ...config,
+      background: config.background || { active: -1, images: [] },
       defaults,
       slides: configSlides,
       contentSlides: normalizedSlides
@@ -1759,6 +1805,7 @@ function buildDeckHtml() {
     .replaceAll("{{CONFIG_JSON}}", JSON.stringify({
       title: normalized.config.title || "Presentation",
       theme,
+      background: normalized.config.background,
       defaults,
       cover: normalized.config.cover || {},
       metadata: normalized.config.metadata || {},
@@ -2034,6 +2081,11 @@ wss.on("connection", (ws, requestUrl) => {
 
     if (message.type === "input" && typeof message.data === "string") {
       term.write(message.data);
+    } else if (message.type === "execute" && typeof message.command === "string") {
+      const command = message.command.replace(/\r\n?/g, "\n").trim();
+      if (command && command.length <= 4096 && !/[\x00-\x08\x0b-\x1f\x7f]/.test(command)) {
+        term.write(`${command.replace(/\n/g, "\r")}\r`);
+      }
     } else if (message.type === "resize") {
       const cols = Number.parseInt(message.cols, 10);
       const rows = Number.parseInt(message.rows, 10);

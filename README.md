@@ -67,6 +67,7 @@ It keeps the UI out of the way and leaves room for a real shell when a slide nee
 ### What stands out
 
 - Real interactive terminals, not mocked output.
+- `Copy` and `Execute` on fenced `bash`, `sh`, `shell`, and `zsh` blocks in terminal slides. Execute sends the command to that slide's current terminal session, where output appears live.
 - Fixed terminal geometry on terminal-enabled slides.
 - Keyboard navigation and progress dots.
 - Clean slide counter for screen sharing.
@@ -125,6 +126,7 @@ You change the draft in the browser, save it back to disk, and the rendered deck
 ### What stands out
 
 - Edit slide text, type, image state, and metadata.
+- Upload up to 20 presentation backgrounds, switch between them, or select the unchanged default. Images are saved under `content/` and displayed without stretching; the center may be cropped to fill the screen.
 - Fenced `mermaid` code blocks render as deck-styled diagrams.
 - Add, delete, and reorder slides.
 - Save through `PUT /api/presentation`.

@@ -64,6 +64,7 @@
       --safe-x: 6vw;
       --safe-y: 6vh;
       --control-bottom: max(1rem, env(safe-area-inset-bottom));
+      --deck-image-overlay: rgba(0, 0, 0, 0.58);
     }
 
     html[data-theme="light"] {
@@ -100,6 +101,7 @@
       --markdown-code-variable: #0f766e;
       --markdown-code-boolean: #2563eb;
       --markdown-code-punctuation: #334155;
+      --deck-image-overlay: rgba(246, 247, 249, 0.7);
     }
 
     html[data-theme="dark"] {
@@ -136,8 +138,25 @@
       contain: layout paint style;
     }
 
+    .deck::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background-image: linear-gradient(var(--deck-image-overlay), var(--deck-image-overlay)), var(--deck-background-image, none);
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      pointer-events: none;
+      opacity: 0;
+    }
+
+    .deck.has-background::before {
+      opacity: 1;
+    }
+
     .slide {
       position: absolute;
+      z-index: 1;
       inset: 0;
       display: grid;
       place-items: center;
@@ -300,14 +319,16 @@
       border: 1px solid var(--surface-border);
     }
 
-    .slide-copy .markdown-code-block > .markdown-copy-button {
+    .slide-copy .markdown-code-actions {
       position: absolute;
       top: 0.45rem;
       right: 0.45rem;
       z-index: 1;
+      display: flex;
+      gap: 0.35rem;
     }
 
-    .slide-copy .markdown-code-block > .markdown-copy-button + pre {
+    .slide-copy .markdown-code-block > .markdown-code-actions + pre {
       padding-top: 2.4rem;
     }
 
@@ -420,7 +441,8 @@
       flex: 1 1 auto;
     }
 
-    .slide-copy .markdown-copy-button {
+    .slide-copy .markdown-copy-button,
+    .slide-copy .markdown-execute-button {
       flex: 0 0 auto;
       min-height: 1.55rem;
       padding: 0 0.5rem;
@@ -437,9 +459,19 @@
     }
 
     .slide-copy .markdown-copy-button:hover,
+    .slide-copy .markdown-execute-button:hover,
+    .slide-copy .markdown-execute-button.executed,
     .slide-copy .markdown-copy-button.copied {
       border-color: rgba(125, 255, 155, 0.42);
       background: rgba(125, 255, 155, 0.14);
+    }
+
+    .slide-copy .markdown-execute-button {
+      display: none;
+    }
+
+    .slide.has-terminal .markdown-execute-button {
+      display: inline-block;
     }
 
     .slide-copy details.markdown-details[open] summary {
@@ -1813,6 +1845,12 @@
     <div class="editor-row">
       <label for="slideSelect">Slide</label>
       <select id="slideSelect"></select>
+    </div>
+    <div class="editor-row">
+      <label for="backgroundSelect">Presentation background</label>
+      <select id="backgroundSelect"></select>
+      <input id="backgroundFile" type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/avif" aria-label="Upload background image" />
+      <button id="deleteBackground" type="button">Remove selected image</button>
     </div>
     <div class="editor-row">
       <label>Reorder Slides</label>

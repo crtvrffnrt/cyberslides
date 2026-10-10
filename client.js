@@ -35,6 +35,9 @@
   const imageAlt = document.getElementById("imageAlt");
   const imageX = document.getElementById("imageX");
   const imageY = document.getElementById("imageY");
+  const backgroundSelect = document.getElementById("backgroundSelect");
+  const backgroundFile = document.getElementById("backgroundFile");
+  const deleteBackground = document.getElementById("deleteBackground");
   const mustReadUrl = document.getElementById("mustReadUrl");
   const editorStatus = document.getElementById("editorStatus");
   const cameraToggle = document.getElementById("cameraToggle");
@@ -118,6 +121,7 @@
     cover: presentation.cover || {},
     metadata: presentation.metadata || {},
     presenter: presentation.presenter || {},
+    background: presentation.background || { active: -1, images: [] },
     slides: presentation.slides || []
   }));
   let draftContentSlides = Array.isArray(presentation.contentSlides)
@@ -1096,6 +1100,81 @@
       .catch(() => {
         markCopyButton(button, false);
       });
+  }
+
+  function handleMarkdownExecute(event) {
+    const button = event.target?.closest?.(".markdown-execute-button");
+    if (!button) {
+      return;
+    }
+    event.preventDefault();
+    event.stopPropagation();
+
+    const slide = button.closest(".slide.has-terminal");
+    const index = Number.parseInt(slide?.dataset.slideIndex, 10);
+    const state = terminalStates.get(index);
+    const command = button.dataset.command || "";
+    if (!slide?.classList.contains("active") || !state?.socket || state.socket.readyState !== WebSocket.OPEN || !command.trim()) {
+      setStatus(index, "Terminal unavailable");
+      return;
+    }
+
+    state.socket.send(JSON.stringify({ type: "execute", command }));
+    button.textContent = "Sent";
+    button.classList.add("executed");
+    window.setTimeout(() => {
+      button.textContent = "Execute";
+      button.classList.remove("executed");
+    }, 1200);
+    state.term.focus();
+  }
+
+  function updateBackgroundPreview() {
+    const background = draftConfig.background || { active: -1, images: [] };
+    const src = background.images?.[background.active]?.src;
+    deck?.style.setProperty("--deck-background-image", src ? `url(${JSON.stringify(src)})` : "none");
+    deck?.classList.toggle("has-background", !!src);
+  }
+
+  function populateBackgroundSelect() {
+    if (!backgroundSelect) {
+      return;
+    }
+    const background = draftConfig.background || { active: -1, images: [] };
+    const options = [new Option("Default background", "-1")];
+    background.images.forEach((image, index) => {
+      options.push(new Option(image.name || `Image ${index + 1}`, String(index)));
+    });
+    backgroundSelect.replaceChildren(...options);
+    backgroundSelect.value = String(background.active);
+    if (deleteBackground) {
+      deleteBackground.disabled = background.active < 0;
+    }
+    updateBackgroundPreview();
+  }
+
+  function readBackgroundFile(file) {
+    if (!file) {
+      return;
+    }
+    if (!["image/png", "image/jpeg", "image/webp", "image/gif", "image/avif"].includes(file.type) || file.size > 10 * 1024 * 1024) {
+      setEditorStatus("Choose a PNG, JPEG, WebP, GIF or AVIF image under 10 MB.");
+      return;
+    }
+    const background = draftConfig.background;
+    if (background.images.length >= 20) {
+      setEditorStatus("The background library can hold 20 images.");
+      return;
+    }
+    const reader = new FileReader();
+    reader.addEventListener("load", () => {
+      background.images.push({ src: String(reader.result || ""), name: file.name });
+      background.active = background.images.length - 1;
+      populateBackgroundSelect();
+      setEditorStatus("Background added. Save to keep it.");
+    });
+    reader.addEventListener("error", () => setEditorStatus("Could not read the image."));
+    reader.readAsDataURL(file);
   }
 
   function setCameraStatus(text) {
@@ -2107,6 +2186,7 @@
     editorIndex = clamp(editorIndex, 0, draftContentSlides.length - 1);
     populateSlideSelect();
     populateSlideOrderList();
+    populateBackgroundSelect();
 
     const config = draftConfig.slides[editorIndex] || {};
     const type = config.type || "text";
@@ -2467,6 +2547,33 @@
   }
 
   document.addEventListener("click", handleMarkdownCopy);
+  document.addEventListener("click", handleMarkdownExecute);
+
+  if (backgroundSelect) {
+    backgroundSelect.addEventListener("change", () => {
+      draftConfig.background.active = Number.parseInt(backgroundSelect.value, 10);
+      populateBackgroundSelect();
+      setEditorStatus("Background selected. Save to keep it.");
+    });
+  }
+  if (backgroundFile) {
+    backgroundFile.addEventListener("change", () => {
+      readBackgroundFile(backgroundFile.files?.[0]);
+      backgroundFile.value = "";
+    });
+  }
+  if (deleteBackground) {
+    deleteBackground.addEventListener("click", () => {
+      const background = draftConfig.background;
+      if (background.active < 0) {
+        return;
+      }
+      background.images.splice(background.active, 1);
+      background.active = -1;
+      populateBackgroundSelect();
+      setEditorStatus("Background removed. Save to keep this change.");
+    });
+  }
 
   if (themeToggle) {
     themeToggle.addEventListener("click", () => {
