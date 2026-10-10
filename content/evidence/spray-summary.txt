@@ -1,0 +1,8 @@
+SYNTHETIC FIXTURE — no live request was made
+domain              sample.com
+fallback_domain     samplefallback.onmicrosoft.com
+identity            lab.user@sample.com
+tool_context        o365spray (not executed)
+simulated_result    credential accepted
+next_control        MFA registration required
+access_complete     no

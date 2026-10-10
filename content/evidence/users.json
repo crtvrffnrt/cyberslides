@@ -1,0 +1,26 @@
+{
+  "fixture": "synthetic",
+  "networkActivity": "none",
+  "toolContext": "ROADrecon research context; ROADtools was not run",
+  "tenantLabels": ["sample.com", "samplefallback.onmicrosoft.com"],
+  "users": [
+    {
+      "displayName": "Lab User",
+      "userPrincipalName": "lab.user@sample.com",
+      "accountEnabled": true,
+      "source": "local fixture"
+    },
+    {
+      "displayName": "Support Reader",
+      "userPrincipalName": "support.reader@sample.com",
+      "accountEnabled": true,
+      "source": "local fixture"
+    },
+    {
+      "displayName": "Automation Demo",
+      "userPrincipalName": "automation.demo@samplefallback.onmicrosoft.com",
+      "accountEnabled": false,
+      "source": "local fixture"
+    }
+  ]
+}

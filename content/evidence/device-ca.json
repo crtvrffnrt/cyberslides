@@ -1,0 +1,23 @@
+{
+  "fixture": "synthetic",
+  "networkActivity": "none",
+  "identity": "lab.user@sample.com",
+  "device": {
+    "registration": "registered",
+    "join": "not joined",
+    "management": "not managed",
+    "compliance": "not compliant"
+  },
+  "conditionalAccess": {
+    "requiredControls": ["MFA", "compliant device"],
+    "mfa": "satisfied in simulated event sequence",
+    "device": "not satisfied",
+    "decision": "blocked",
+    "reason": "required compliant-device state is absent"
+  },
+  "uncertainty": [
+    "lab enrollment eligibility",
+    "applicable policy exclusions",
+    "token claims after compliance"
+  ]
+}

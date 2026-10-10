@@ -1,0 +1,13 @@
+{
+  "fixture": "synthetic",
+  "networkActivity": "none",
+  "identity": "lab.user@sample.com",
+  "events": [
+    { "at": "T+00:00", "event": "credential_check", "result": "accepted" },
+    { "at": "T+00:01", "event": "mfa_registration", "result": "required" },
+    { "at": "T+02:30", "event": "method_registration", "result": "completed" },
+    { "at": "T+03:10", "event": "fresh_sign_in", "result": "CA evaluation reached" }
+  ],
+  "accessComplete": false,
+  "remainingDecision": "device and policy controls"
+}

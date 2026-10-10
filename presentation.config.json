@@ -1,9 +1,9 @@
 {
-  "title": "Example Presentation",
+  "title": "Entra ID Attack Path Assessment",
   "theme": {
     "background": "#101114",
     "foreground": "#f2f2f2",
-    "muted": "#8a8a8a",
+    "muted": "#aeb7c2",
     "accent": "#7dff9b"
   },
   "defaults": {
@@ -22,65 +22,174 @@
     "bodyScale": 1
   },
   "cover": {
-    "kicker": "Sample deck",
-    "subtitle": "A neutral starter presentation for local live demos",
-    "title": "Example Presentation",
-    "agendaTitle": "Agenda",
+    "kicker": "CyberSlides starter deck",
+    "subtitle": "Fictional assessment example · simulated evidence only",
+    "title": "Entra ID Attack Path Assessment",
+    "agendaTitle": "Assessment path",
     "agenda": [
-      "Welcome",
-      "Terminal with text",
-      "Text slide",
-      "Image placeholder",
-      "Focused terminal",
-      "Dense slide"
+      "Hypothesis and scope",
+      "Credential and MFA gates",
+      "Conditional Access decision",
+      "Device trust validation",
+      "Token boundaries",
+      "Conclusion and remediation"
     ]
   },
   "metadata": {
-    "date": "2026-01-01",
-    "version": "Example"
+    "date": "Fictional example",
+    "version": "Starter deck"
   },
   "presenter": {
-    "name": "Max Mustermann",
-    "role": "Example Presenter",
-    "contact": "max.mustermann@example.com",
-    "website": "https://example.com",
-    "github": "https://github.com/example-user",
-    "linkedin": "https://www.linkedin.com/in/example-user/"
+    "name": "Patrick Binder",
+    "role": "Offensive Cybersecurity Expert",
+    "contact": "",
+    "website": "https://www.patrick-binder.de/",
+    "github": "",
+    "linkedin": ""
+  },
+  "background": {
+    "active": -1,
+    "images": []
   },
   "slides": [
     {
       "type": "cover",
       "layout": "cover",
-      "terminal": {
-        "enabled": false
-      },
-      "mustReadUrl": "",
-      "headingScale": 1.15,
-      "bodyScale": 1.1,
-      "textScale": 1.1
-    },
-    {
-      "type": "terminalText",
-      "layout": "hero",
-      "terminal": {
-        "enabled": true,
-        "leftVw": 52,
-        "topVh": 12,
-        "widthVw": 42,
-        "heightVh": 72,
-        "title": "Live Terminal",
-        "position": "right"
-      },
+      "terminal": { "enabled": false },
       "mustReadUrl": "",
       "headingScale": 1,
       "bodyScale": 1,
       "textScale": 1
     },
     {
+      "type": "dense",
+      "layout": "dense",
+      "terminal": { "enabled": false },
+      "mustReadUrl": "",
+      "headingScale": 0.76,
+      "bodyScale": 0.84,
+      "textScale": 0.84
+    },
+    {
+      "type": "image",
+      "layout": "center",
+      "terminal": { "enabled": false },
+      "mustReadUrl": "",
+      "image": {
+        "src": "/content/entra-attack-path-overview.webp",
+        "alt": "Conceptual attack path from credential acceptance through identity, policy, and device gates to a protected cloud resource, with a broken link before access",
+        "x": 0,
+        "y": 0,
+        "scale": 0.9
+      },
+      "headingScale": 0.72,
+      "bodyScale": 0.82,
+      "textScale": 0.82
+    },
+    {
+      "type": "terminalText",
+      "layout": "hero",
+      "terminal": {
+        "enabled": true,
+        "leftVw": 46,
+        "topVh": 10,
+        "widthVw": 48,
+        "heightVh": 83,
+        "title": "Local evidence · spray summary",
+        "position": "right"
+      },
+      "mustReadUrl": "https://github.com/0xZDH/o365spray",
+      "headingScale": 0.78,
+      "bodyScale": 0.9,
+      "textScale": 0.9
+    },
+    {
       "type": "text",
       "layout": "center",
+      "terminal": { "enabled": false },
+      "mustReadUrl": "",
+      "headingScale": 0.9,
+      "bodyScale": 0.98,
+      "textScale": 0.98
+    },
+    {
+      "type": "terminalText",
+      "layout": "hero",
       "terminal": {
-        "enabled": false
+        "enabled": true,
+        "leftVw": 46,
+        "topVh": 10,
+        "widthVw": 48,
+        "heightVh": 83,
+        "title": "Local evidence · MFA events",
+        "position": "right"
+      },
+      "mustReadUrl": "",
+      "headingScale": 0.78,
+      "bodyScale": 0.9,
+      "textScale": 0.9
+    },
+    {
+      "type": "image",
+      "layout": "center",
+      "terminal": { "enabled": false },
+      "mustReadUrl": "",
+      "image": {
+        "src": "/content/entra-mfa-device-gates.webp",
+        "alt": "Conceptual sequence from credential acceptance through MFA registration and a fresh sign-in to separate allow and block outcomes at the device compliance gate",
+        "x": 0,
+        "y": 0,
+        "scale": 0.9
+      },
+      "headingScale": 0.72,
+      "bodyScale": 0.82,
+      "textScale": 0.82
+    },
+    {
+      "type": "dense",
+      "layout": "dense",
+      "terminal": { "enabled": false },
+      "mustReadUrl": "",
+      "headingScale": 0.72,
+      "bodyScale": 0.82,
+      "textScale": 0.82
+    },
+    {
+      "type": "terminalText",
+      "layout": "hero",
+      "terminal": {
+        "enabled": true,
+        "leftVw": 46,
+        "topVh": 10,
+        "widthVw": 48,
+        "heightVh": 83,
+        "title": "Local evidence · device / CA state",
+        "position": "right"
+      },
+      "mustReadUrl": "",
+      "headingScale": 0.78,
+      "bodyScale": 0.9,
+      "textScale": 0.9
+    },
+    {
+      "type": "text",
+      "layout": "center",
+      "terminal": { "enabled": false },
+      "mustReadUrl": "",
+      "headingScale": 0.78,
+      "bodyScale": 0.92,
+      "textScale": 0.92
+    },
+    {
+      "type": "terminalFocused",
+      "layout": "center",
+      "terminal": {
+        "enabled": true,
+        "leftVw": 7,
+        "topVh": 9,
+        "widthVw": 86,
+        "heightVh": 78,
+        "title": "Manual · node content/evidence/show-device-ca.js"
       },
       "mustReadUrl": "",
       "headingScale": 1,
@@ -90,33 +199,31 @@
     {
       "type": "image",
       "layout": "center",
-      "terminal": {
-        "enabled": false
-      },
+      "terminal": { "enabled": false },
       "mustReadUrl": "",
       "image": {
-        "src": "",
-        "alt": "Placeholder image",
+        "src": "/content/entra-token-trust-boundaries.webp",
+        "alt": "Conceptual trust-boundary chain from a lab device through device trust, a primary refresh token, a broker, and a resource token to a separately locked directory permission gate",
         "x": 0,
         "y": 0,
-        "scale": 1
+        "scale": 0.9
       },
-      "headingScale": 1,
-      "bodyScale": 1,
-      "textScale": 1
+      "headingScale": 0.68,
+      "bodyScale": 0.8,
+      "textScale": 0.8
     },
     {
       "type": "terminalFocused",
-      "layout": "terminal",
+      "layout": "center",
       "terminal": {
         "enabled": true,
         "leftVw": 7,
         "topVh": 9,
         "widthVw": 86,
         "heightVh": 78,
-        "title": "Focused Terminal"
+        "title": "ROADrecon context · node content/evidence/show-users.js"
       },
-      "mustReadUrl": "",
+      "mustReadUrl": "https://github.com/dirkjanm/ROADtools",
       "headingScale": 1,
       "bodyScale": 1,
       "textScale": 1
@@ -124,21 +231,27 @@
     {
       "type": "dense",
       "layout": "dense",
-      "terminal": {
-        "enabled": false
-      },
+      "terminal": { "enabled": false },
       "mustReadUrl": "",
-      "headingScale": 1,
-      "bodyScale": 1,
-      "textScale": 1
+      "headingScale": 0.68,
+      "bodyScale": 0.78,
+      "textScale": 0.78
     }
   ],
   "contentSlides": [
-    "> Sample deck\n\n# Example Presentation\n\nA neutral starter presentation for local live demos",
-    "# Terminal with text\n\nUse this slide for a short setup and a live command.\n\n- Keep the text brief\n- Let the terminal carry the demo",
-    "# Text slide\n\nOne clear idea per slide.\n\nUse short sentences that remain readable during screen sharing.",
-    "# Image placeholder\n\nAdd a single visual here when your deck needs one.\n\nThis public sample intentionally ships without embedded images.",
-    "# Focused terminal\n\n",
-    "# Dense slide\n\n| Area | Placeholder |\n| --- | --- |\n| Goal | Show compact technical detail |\n| Input | Example data |\n| Output | Example result |\n\n- Use dense slides sparingly\n- Prefer concise evidence over long prose"
+    "# Entra ID Attack Path Assessment\n\nFictional assessment example · simulated evidence only",
+    "# Assessment frame: test every dependency\n\n| Field | Value |\n| --- | --- |\n| Scope | Fictional labels `sample.com` and `samplefallback.onmicrosoft.com`; local fixtures only |\n| Test identity | `lab.user@sample.com` |\n| Evidence labels | **SIMULATED** = local fixture · **HYPOTHESIS** = unverified · **UNKNOWN** = evidence absent |\n| Assumption | Authorized lab; no live authentication or tenant enumeration |\n\n> Hypothesis: accepted credential → MFA registration → fresh sign-in → joined + managed + compliant device → token issuance → separately authorized directory access.",
+    "# Every edge must hold\n\nProposed path: credential → MFA → policy → device trust → token → permission. The break marks the earliest blocked dependency.\n\n*Conceptual illustration — not evidence.*",
+    "# Simulated spray signal\n\nTenant: `sample.com` → `samplefallback.onmicrosoft.com` · Identity: `lab.user@sample.com`\n\nSimulated fixture. [o365spray](https://github.com/0xZDH/o365spray) is source-tool context; it was not run here.\n\n```bash\nsed -n '1,8p' content/evidence/spray-summary.txt\n```",
+    "# Accepted password ≠ completed access\n\n**SIMULATED:** the fixture records credential acceptance, followed by an MFA registration requirement.\n\nThis supports credential validity only. MFA completion, Conditional Access satisfaction, token issuance, and directory access remain separate decisions.",
+    "# MFA registration is a checkpoint\n\n**SIMULATED:** registration required → method added → fresh sign-in reaches policy evaluation. Access is still incomplete.\n\n```bash\nnode content/evidence/show-mfa.js\n```",
+    "# MFA does not decide device trust\n\nRegistration enables the next sign-in; Conditional Access still evaluates the device independently.\n\n*Conceptual illustration — not evidence.*",
+    "# Conditional Access breaks at device state\n\n| Account | MFA | Device | Observed result | Remaining uncertainty |\n| --- | --- | --- | --- | --- |\n| Enabled; credential accepted | Not registered | Unknown | **SIMULATED:** registration required | Can registration complete? |\n| Enabled | Registered; fresh sign-in | Unknown | **SIMULATED:** CA evaluation reached | Which controls applied? |\n| Enabled | Satisfied in fixture | Registered only | **SIMULATED:** device control failed | Join and MDM eligibility |\n| Enabled | Satisfied | Joined + managed + compliant | **UNKNOWN:** not tested | Token claims and resource permission |",
+    "# Device state is the broken link\n\n**Hypothesis:** a joined, managed, compliant lab VM could pass the device gate. Current **SIMULATED** state is registered only.\n\n```bash\nnode content/evidence/show-device-ca.js\n```",
+    "# Enrollment changes state; it does not guarantee access\n\nProposed lab step: enroll a disposable Windows VM, complete Entra join, then collect management and compliance evidence.\n\n**Registered** = directory record · **Joined** = Entra trust\n**Managed** = MDM authority · **Compliant** = policy evaluation\n\nThe path stops unless the policy's required states are actually met.",
+    "",
+    "# Token issuance and directory permission are separate\n\nA trusted device may support a PRT; a PRT may support a resource token. The resource still evaluates audience, scopes or roles, and authorization.\n\n*Conceptual illustration — not evidence.*",
+    "",
+    "# Conclusion: the path breaks at device trust\n\n| Status | Assessment statement |\n| --- | --- |\n| **Confirmed — simulated** | Credential accepted; MFA method registered; fresh sign-in reached CA; device control blocked. The user list is a local fixture only. |\n| **Hypotheses** | Enrollment and join could produce managed, compliant state; token issuance and directory authorization would still require separate proof. |\n| **Earliest break** | Required device state is absent before any token or directory-access claim. |\n| **Validate next** | Inspect sign-in and CA detail, registration type, join, MDM and compliance evidence, then token claims and the resource response in an authorized lab. |\n\n### Defensive themes\n\n- Detect spray and anomalous security-info registration.\n- Restrict enrollment; require managed, compliant state where justified; audit exclusions.\n- Minimize directory permissions and monitor enumeration behavior.\n\nSources / tooling context: [o365spray](https://github.com/0xZDH/o365spray) · [ROADtools / ROADrecon](https://github.com/dirkjanm/ROADtools). Neither was run for this sample."
   ]
 }

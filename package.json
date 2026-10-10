@@ -4,6 +4,9 @@
   "private": true,
   "description": "Markdown-driven presentation deck with per-slide terminal panes.",
   "main": "server.js",
+  "allowScripts": {
+    "node-pty@1.1.0": true
+  },
   "scripts": {
     "start": "node server.js",
     "dev": "NODE_ENV=development PRESENTATION_DEBUG=1 node --watch server.js",

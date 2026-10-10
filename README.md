@@ -30,7 +30,7 @@ Cyberslides runs locally and only needs a few pieces:
 | --- | --- | --- |
 | Node.js 18+ | Runs the server and browser tooling | `node -v` |
 | npm | Installs project dependencies | Ships with Node.js |
-| Linux build tools | Builds `node-pty` on Linux | `build-essential`, `python3`, `make`, `g++`, `pkg-config` |
+| Linux build tools | Builds `node-pty` on Linux, including x64 and Raspberry Pi ARM | `build-essential`, `python3`, `pkg-config` |
 | WebSocket-capable browser | Presenter and Edit Mode UI | Recent Chrome, Firefox, or Edge |
 
 The npm dependencies are installed by `npm install`:
@@ -46,7 +46,7 @@ Copy, paste, run:
 
 ```bash
 sudo apt update
-sudo apt install -y build-essential python3 make g++ pkg-config curl git
+sudo apt install -y build-essential python3 pkg-config curl git
 npm install
 npm start
 ```
@@ -54,6 +54,8 @@ npm start
 Before `npm start`, edit `network.config.json` in the project root to choose where the server listens. Changes take effect on the next start.
 
 If you are on a different Linux distro, install the same native build prerequisites through your package manager, then run `npm install` and `npm start`.
+
+`node-pty` is compiled locally on Linux. The project approves its pinned `node-gyp rebuild` install script in `package.json`, which is required by npm versions that block dependency scripts by default. If dependencies were installed before this approval, run `npm install` again. If a native module was copied from another machine or Node.js version, run `npm rebuild node-pty`. When upgrading `node-pty`, review its install script and update the pinned `allowScripts` entry.
 
 When the server boots, it prints the local URL, usually:
 
