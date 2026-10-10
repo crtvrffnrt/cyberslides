@@ -17,7 +17,7 @@
 
 ## At a Glance
 
-- Real terminal sessions inside slides.
+- Real terminal sessions inside slides. No more jumping between Terminal and Presentaion.
 - Browser-based editing with save-to-disk flow.
 - No build step.
 - Small stack and easy local debugging.
